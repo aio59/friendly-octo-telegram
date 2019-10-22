@@ -7,15 +7,8 @@ int sshlisten(ssh_session session) {
 	int rc;
 	char buffer[256];
 	int nbytes;
-	int newport = 1080;
-	int forwardport = 0;
+	int forwardport = 1081;
 
-	// Port Forwarding
-	rc = ssh_channel_listen_forward(session, NULL, newport, NULL);
-	if (rc != SSH_OK) {
-		printf("Error opening remote port: %s\n", ssh_get_error(session));
-		exit(-1);
-	}
 
 	ssh_channel channel = ssh_channel_accept_forward(session, 60000, &forwardport);
 	if (channel == NULL) {
@@ -73,10 +66,10 @@ int sshreqexec(ssh_session session, char *command) {
 int main() {
 	int rc;
 
-	char *host = "192.168.254.200";
+	char *host = "192.168.254.122";
 	int port = 22;
-	char *user = "debian666";
-	char *password = "11c6iEva~!";
+	char *user = "a";
+	char *password = "cerberus";
 
 	ssh_session session = ssh_new();
 	if (session == NULL) {
@@ -97,7 +90,7 @@ int main() {
     if (rc != SSH_AUTH_SUCCESS) {
     	printf("Error authenticating with password: %s\n", ssh_get_error(session));
     	exit(-1);
-    }
+}
 
     sshlisten(session);
 
