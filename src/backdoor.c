@@ -44,7 +44,7 @@ int forwardtcp(ssh_channel channel) {
 	ssize_t buffer_len;
 	int bl;
 	ssize_t i;
-	while (1) { printf("asdasdaasdasd\n");
+	while (1) {
 		FD_ZERO(&fds);
 		FD_SET(local_sock, &fds);
 		tv.tv_sec = 0;
@@ -56,7 +56,7 @@ int forwardtcp(ssh_channel channel) {
 			goto close;
 		}
 		if (rc && FD_ISSET(local_sock, &fds)) {
-			buffer_len = recv(local_sock, buffer, sizeof(buffer), 0); printf("x");        fwrite(buffer, 1, buffer_len, stdout); // receive buffer from local sock 
+			buffer_len = recv(local_sock, buffer, sizeof(buffer), 0); // receive buffer from local sock 
 			if (buffer_len < 0) {
 				fprintf(stderr, "Error reading on local sock\n");
 				goto close;
@@ -72,7 +72,7 @@ int forwardtcp(ssh_channel channel) {
 			} while (bl > 0 && i < buffer_len);
 		}
 		while (1) {
-			buffer_len = ssh_channel_read_nonblocking(channel, buffer, sizeof(buffer), 0);  printf("o");        fwrite(buffer, 1, buffer_len, stdout); printf("%d\n", (int)buffer_len);
+			buffer_len = ssh_channel_read_nonblocking(channel, buffer, sizeof(buffer), 0);
 			if (buffer_len == 0) break; 
 			else if (buffer_len < 0) {
 				fprintf(stderr, "Error reading on channel\n");
@@ -127,6 +127,7 @@ int sshportforward(ssh_session session) {
 		*/
 		ssh_set_blocking(session, 0);
 		forwardtcp(channel);
+		ssh_set_blocking(session, 1);
 		ssh_channel_free(channel);
 	}
 }
