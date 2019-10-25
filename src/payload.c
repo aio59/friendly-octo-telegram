@@ -11,10 +11,9 @@
 #define PASSWORD "cerberus"
 
 #define REMOTE_LISTEN_PORT 2222
-#define REMOTE_DESTINATION_PORT 0
 
 #define LOCAL_ADDRESS "127.0.0.1"
-#define LOCAL_PORT 8083
+#define LOCAL_PORT 22
 
 int forwardtcp(ssh_channel channel) {
 	int local_sock;
@@ -41,11 +40,11 @@ int forwardtcp(ssh_channel channel) {
 	fd_set fds;
 	struct timeval tv;
 	int rc;
-	int buffer[16384];
+	char buffer[16384];
 	ssize_t buffer_len;
 	int bl;
 	ssize_t i;
-	while (1) {
+	while (1) { printf("asdasdaasdasd\n");
 		FD_ZERO(&fds);
 		FD_SET(local_sock, &fds);
 		tv.tv_sec = 0;
@@ -56,35 +55,29 @@ int forwardtcp(ssh_channel channel) {
 			fprintf(stderr, "select\n");
 			goto close;
 		}
-		if (rc && FD_ISSET(local_sock, &fds)) { fprintf(stderr, "asdasdasdasda");
-			buffer_len = recv(local_sock, buffer, sizeof(buffer), 0); // receive buffer from local sock
-			fwrite(buffer, 1, buffer_len, stdout);
+		if (rc && FD_ISSET(local_sock, &fds)) {
+			buffer_len = recv(local_sock, buffer, sizeof(buffer), 0); printf("x");        fwrite(buffer, 1, buffer_len, stdout); // receive buffer from local sock 
 			if (buffer_len < 0) {
 				fprintf(stderr, "Error reading on local sock\n");
 				goto close;
 			}
-			else if(buffer_len == 0) {
-                fprintf(stderr, "Error local sock disconnected\n");
-                goto close;
-            }
-
 			i = 0;
 			do {
-				bl = ssh_channel_write(channel, buffer, buffer_len); 
+				bl = ssh_channel_write(channel, buffer, buffer_len);
 				if (bl < 0) {
 					fprintf(stderr, "Error writing to channel\n");
 					goto close;
 				}
 				i += bl;
-			} while(bl > 0 && i < buffer_len);
+			} while (bl > 0 && i < buffer_len);
 		}
 		while (1) {
-			buffer_len = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
-			if (buffer_len < 0) {
+			buffer_len = ssh_channel_read_nonblocking(channel, buffer, sizeof(buffer), 0);  printf("o");        fwrite(buffer, 1, buffer_len, stdout); printf("%d\n", (int)buffer_len);
+			if (buffer_len == 0) break; 
+			else if (buffer_len < 0) {
 				fprintf(stderr, "Error reading on channel\n");
 				goto close;
 			}
-
 			i = 0;
 			while (i < buffer_len) {
 				bl = send(local_sock, buffer + i, buffer_len - i, 0); 
@@ -106,7 +99,7 @@ int forwardtcp(ssh_channel channel) {
 
 int sshportforward(ssh_session session) {
 	int listen_port = REMOTE_LISTEN_PORT;
-	int destination_port = REMOTE_DESTINATION_PORT;
+	int destination_port = LOCAL_PORT;
 	int rc;
 	rc = ssh_channel_listen_forward(session, NULL, listen_port, NULL); // wait till request
 	if (rc != SSH_OK) {
@@ -134,12 +127,11 @@ int sshportforward(ssh_session session) {
 		*/
 		ssh_set_blocking(session, 0);
 		forwardtcp(channel);
-		ssh_set_blocking(session, 1);
 		ssh_channel_free(channel);
 	}
 }
 
-ssh_session sshconnect(ssh_session session) {
+int sshconnect(ssh_session session) {
 	char *host = HOST;
 	int port = PORT;
 	char *user = USER;
@@ -160,7 +152,6 @@ ssh_session sshconnect(ssh_session session) {
     	fprintf(stderr, "Error authenticating with password: %s\n", ssh_get_error(session));
     	exit(-1);
 	}
-	return session;
 }
 
 int main() {
@@ -168,7 +159,7 @@ int main() {
 	session = ssh_new();
 	if (session == NULL) exit(-1);
 
-	session = sshconnect(session);
+	sshconnect(session);
     sshportforward(session);
    	ssh_disconnect(session);
    	ssh_free(session);
